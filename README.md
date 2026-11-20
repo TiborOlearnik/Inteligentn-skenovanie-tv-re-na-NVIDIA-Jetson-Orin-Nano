@@ -1,4 +1,4 @@
-# Biometrická autentifikácia a dochádzkový systém na NVIDIA Jetson Orin Nano
+# Inteligentné skenovanie tváre na NVIDIA Jetson Orin Nano
 
 Systém na detekciu a biometrickú autentifikáciu osôb v reálnom čase optimalizovaný pre platformu **NVIDIA Jetson Orin Nano 8GB** (architektúra Ampere, Compute Capability `87`). Projekt využíva hardvérovú GPU akceleráciu (**CUDA + cuDNN**) na detekciu tvárí pomocou konvolučnej neurónovej siete (CNN) a extrakciu 128-rozmerných biometrických vektorov (ResNet).
 
