@@ -1,0 +1,32 @@
+=== Spustenie testu: 2026-11-18 21:58:25 ===
+--- Načítavam autorizované osoby ---
+[OK] Registrovaný: Arnold_Schwarzenegger_0003
+
+--- Testujem vstupné fotografie (CUDA CNN detektor) ---
+Súbor Arnold_Schwarzenegger_0002.jpg: nájdených tvárí = 1 (čas: 1.108 s)
+  -> AUTORIZOVANY: Arnold_Schwarzenegger_0003 (dist: 0.44)
+Súbor Arnold_Schwarzenegger_0008.jpg: nájdených tvárí = 1 (čas: 0.043 s)
+  -> NEAUTORIZOVANY (dist: 0.60)
+Súbor Arnold_Schwarzenegger_0005.jpg: nájdených tvárí = 2 (čas: 0.052 s)
+  -> AUTORIZOVANY: Arnold_Schwarzenegger_0003 (dist: 0.36)
+  -> NEAUTORIZOVANY (dist: 0.83)
+Súbor Arnold_Schwarzenegger_0001.jpg: nájdených tvárí = 1 (čas: 0.039 s)
+  -> AUTORIZOVANY: Arnold_Schwarzenegger_0003 (dist: 0.43)
+Súbor Arnold_Schwarzenegger_0009.jpg: nájdených tvárí = 1 (čas: 0.036 s)
+  -> AUTORIZOVANY: Arnold_Schwarzenegger_0003 (dist: 0.46)
+Súbor Arnold_Schwarzenegger_0004.jpg: nájdených tvárí = 1 (čas: 0.032 s)
+  -> AUTORIZOVANY: Arnold_Schwarzenegger_0003 (dist: 0.41)
+Súbor Arnold_Schwarzenegger_0007.jpg: nájdených tvárí = 2 (čas: 0.048 s)
+  -> AUTORIZOVANY: Arnold_Schwarzenegger_0003 (dist: 0.40)
+  -> NEAUTORIZOVANY (dist: 0.96)
+Súbor Arnold_Schwarzenegger_0006.jpg: nájdených tvárí = 1 (čas: 0.034 s)
+  -> AUTORIZOVANY: Arnold_Schwarzenegger_0003 (dist: 0.47)
+Súbor Arnold_Schwarzenegger_0010.jpg: nájdených tvárí = 1 (čas: 0.036 s)
+  -> AUTORIZOVANY: Arnold_Schwarzenegger_0003 (dist: 0.43)
+
+--- Súhrn ---
+Spracovaných fotografií: 9
+Celkový čas spracovania: 1.469 s
+Priemerný čas na 1 fotografiu: 0.163 s
+=============================================
+
