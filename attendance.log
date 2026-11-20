@@ -1,0 +1,30 @@
+[2026-11-18 21:30:50,231] [INFO] ============================================================
+[2026-11-18 21:30:50,232] [INFO]           JETSON Nano ATTENDANCE SYSTEM
+[2026-11-18 21:30:50,232] [INFO] ============================================================
+[2026-11-18 21:30:50,232] [INFO] ✓ dlib CUDA enabled with 1 devices
+[2026-11-18 21:30:50,232] [INFO] Platform: NVIDIA Jetson Nano
+[2026-11-18 21:30:50,232] [INFO] Resolution: 320x240 (Display scaled: 640x580)
+[2026-11-18 21:30:50,232] [INFO] Detection interval: Every 5 frames
+[2026-11-18 21:30:50,232] [INFO] Face recognition model: HOG
+[2026-11-18 21:30:50,232] [INFO] Running in 25W mode for optimal performance
+[2026-11-18 21:30:50,233] [INFO] CPU governor: schedutil
+[2026-11-18 21:30:50,233] [WARNING] Low-power mode detected. Run 'sudo nvpmodel -m 0' for best performance.
+[2026-11-18 21:30:50,234] [INFO] Directories verified
+[2026-11-18 21:30:50,262] [INFO] Created new attendance file: /home/diplomovka/bsb/facerec/FaceRecognition-Attendance/Attendance_Entry/Attendance_2026_11_19.csv
+[2026-11-18 21:30:50,262] [INFO] 
+============================================================
+[2026-11-18 21:30:50,262] [INFO] LOADING TRAINING DATA
+[2026-11-18 21:30:50,262] [INFO] ============================================================
+[2026-11-18 21:30:50,263] [INFO] Found 3 persons: ['TIBOR', 'JURAJ', 'GEORGE_W_BUSH']
+[2026-11-18 21:30:50,270] [INFO]   • TIBOR: 5 images
+[2026-11-18 21:30:50,274] [INFO]   • JURAJ: 1 images
+[2026-11-18 21:30:50,275] [INFO]   • GEORGE_W_BUSH: 1 images
+[2026-11-18 21:30:50,275] [INFO] Loaded 7 total images for 3 persons
+[2026-11-18 21:30:50,275] [INFO] Generating face encodings...
+[2026-11-18 21:30:51,364] [INFO] Successfully generated encodings for 3 persons
+[2026-11-18 21:30:51,365] [INFO] ============================================================
+[2026-11-18 21:30:51,365] [INFO] Loading face detection model...
+[2026-11-18 21:30:51,442] [INFO] Using CPU backend for DNN
+[2026-11-18 21:30:51,443] [INFO] Initializing camera...
+[2026-11-18 21:30:51,444] [WARNING] GStreamer pipeline failed, trying standard camera...
+[2026-11-18 21:30:51,446] [ERROR] Cannot open camera.

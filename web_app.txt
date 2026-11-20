@@ -1,0 +1,359 @@
+import os
+import csv
+import base64
+from datetime import datetime
+import cv2
+import numpy as np
+import face_recognition
+from flask import Flask, render_template_string, request, redirect, url_for, send_from_directory
+from werkzeug.utils import secure_filename
+
+app = Flask(__name__)
+
+# Konfigurácia priečinkov
+BASE_DIR = "web_data"
+AUTH_DIR = os.path.join(BASE_DIR, "authorized")
+LOG_FILE = os.path.join(BASE_DIR, "auth_log.csv")
+os.makedirs(AUTH_DIR, exist_ok=True)
+
+# Cache biometrických vektorov v pamäti: {meno: {"encoding": np.array, "filename": str}}
+users_db = {}
+
+
+def resize_if_needed(bgr_img, max_dim=1280):
+    """Zmenší príliš veľké fotky (napr. z mobilu), aby šetril 8 GB GPU RAM na Jetsone."""
+    h, w = bgr_img.shape[:2]
+    if max(h, w) > max_dim:
+        scale = max_dim / float(max(h, w))
+        bgr_img = cv2.resize(bgr_img, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA)
+    return bgr_img
+
+
+def load_users_from_disk():
+    """Načíta registrovaných používateľov z priečinka web_data/authorized."""
+    users_db.clear()
+    for fname in sorted(os.listdir(AUTH_DIR)):
+        if fname.lower().endswith((".jpg", ".jpeg", ".png")):
+            path = os.path.join(AUTH_DIR, fname)
+            img = face_recognition.load_image_file(path)
+            encs = face_recognition.face_encodings(img)
+            if encs:
+                name = os.path.splitext(fname)[0]
+                users_db[name] = {"encoding": encs[0], "filename": fname}
+                print(f"[OK] Načítaný používateľ: {name}")
+
+
+def log_attempt(status, name, distance):
+    """Zapíše výsledok overenia do CSV súboru."""
+    file_exists = os.path.isfile(LOG_FILE)
+    with open(LOG_FILE, mode="a", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        if not file_exists:
+            writer.writerow(["Cas", "Stav", "Osoba", "Vzdialenost"])
+        writer.writerow([
+            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            status,
+            name,
+            f"{distance:.3f}" if distance is not None else "-"
+        ])
+
+
+def read_logs(limit=10):
+    """Prečíta posledné záznamy z histórie overení."""
+    if not os.path.isfile(LOG_FILE):
+        return []
+    with open(LOG_FILE, mode="r", encoding="utf-8") as f:
+        rows = list(csv.reader(f))
+    if len(rows) <= 1:
+        return []
+    return list(reversed(rows[1:]))[:limit]
+
+
+HTML_TEMPLATE = """
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jetson Orin Nano - Face Auth</title>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; margin: 0; padding: 20px; }
+        .container { max-width: 1100px; margin: 0 auto; }
+        h1 { color: #38bdf8; margin-bottom: 5px; }
+        .subtitle { color: #94a3b8; margin-bottom: 25px; font-size: 0.95rem; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
+        .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+        h2 { margin-top: 0; font-size: 1.2rem; color: #f8fafc; border-bottom: 1px solid #334155; padding-bottom: 10px; }
+        label { display: block; margin: 12px 0 6px; font-weight: 600; font-size: 0.9rem; }
+        input[type="text"], input[type="file"], input[type="range"] {
+            width: 100%; box-sizing: border-box; padding: 10px; border-radius: 8px;
+            border: 1px solid #475569; background: #0f172a; color: #f8fafc;
+        }
+        button {
+            margin-top: 15px; width: 100%; padding: 12px; border: none; border-radius: 8px;
+            background: #0284c7; color: white; font-weight: 700; font-size: 1rem; cursor: pointer;
+        }
+        button:hover { background: #0369a1; }
+        .btn-danger { background: #dc2626; padding: 6px 12px; width: auto; margin-top: 0; font-size: 0.85rem; }
+        .btn-danger:hover { background: #b91c1c; }
+        .alert { padding: 12px 15px; border-radius: 8px; margin-bottom: 20px; font-weight: 600; }
+        .alert-ok { background: #064e3b; border: 1px solid #10b981; color: #a7f3d0; }
+        .alert-err { background: #7f1d1d; border: 1px solid #ef4444; color: #fecaca; }
+        .result-box { margin-top: 20px; text-align: center; }
+        .result-box img { max-width: 100%; border-radius: 8px; border: 2px solid #475569; }
+        .user-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; }
+        .user-item { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 10px; text-align: center; }
+        .user-item img { width: 90px; height: 90px; object-fit: cover; border-radius: 50%; border: 2px solid #38bdf8; }
+        .user-name { font-weight: 700; margin: 8px 0; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th, td { text-align: left; padding: 10px; border-bottom: 1px solid #334155; }
+        th { color: #94a3b8; }
+        .badge-ok { color: #34d399; font-weight: 700; }
+        .badge-no { color: #f87171; font-weight: 700; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Jetson Orin Nano — Autentifikácia tváre</h1>
+    <div class="subtitle">CUDA GPU akcelerácia (dlib CNN) • Registrovaných osôb: {{ users|length }}</div>
+
+    {% if message %}
+        <div class="alert {{ 'alert-ok' if success else 'alert-err' }}">{{ message }}</div>
+    {% endif %}
+
+    <div class="grid">
+        <!-- OVERENIE TVÁRE -->
+        <div class="card">
+            <h2>1. Overenie prístupu (Autentifikácia)</h2>
+            <form action="/verify" method="post" enctype="multipart/form-data">
+                <label for="verify_photo">Vyber fotografiu na overenie:</label>
+                <input type="file" id="verify_photo" name="photo" accept="image/*" required>
+
+                <label for="tolerance">Prísnosť porovnania (Tolerance: <span id="tol_val">{{ tolerance }}</span>):</label>
+                <input type="range" id="tolerance" name="tolerance" min="0.35" max="0.65" step="0.01"
+                       value="{{ tolerance }}" oninput="document.getElementById('tol_val').innerText = this.value">
+                <small style="color:#94a3b8;">Nižšia hodnota = prísnejšia zhoda (odporúčané 0.50)</small>
+
+                <button type="submit">Overiť tvár cez GPU</button>
+            </form>
+
+            {% if result_image %}
+            <div class="result-box">
+                <img src="data:image/jpeg;base64,{{ result_image }}" alt="Výsledok overenia">
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- REGISTRÁCIA POUŽÍVATEĽA -->
+        <div class="card">
+            <h2>2. Registrácia nového používateľa</h2>
+            <form action="/register" method="post" enctype="multipart/form-data">
+                <label for="name">Meno používateľa:</label>
+                <input type="text" id="name" name="name" placeholder="napr. Peter_Novak" required>
+
+                <label for="reg_photo">Referenčná fotografia (1 tvár spredu):</label>
+                <input type="file" id="reg_photo" name="photo" accept="image/*" required>
+
+                <button type="submit" style="background:#059669;">Zaregistrovať osobu</button>
+            </form>
+
+            <h2 style="margin-top: 30px;">Registrovaní používatelia</h2>
+            {% if users %}
+            <div class="user-list">
+                {% for name, info in users.items() %}
+                <div class="user-item">
+                    <img src="{{ url_for('user_photo', filename=info.filename) }}" alt="{{ name }}">
+                    <div class="user-name">{{ name }}</div>
+                    <form action="/delete/{{ name }}" method="post">
+                        <button type="submit" class="btn-danger">Odstrániť</button>
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+                <p style="color:#94a3b8;">Zatiaľ nie sú zaregistrovaní žiadni používatelia.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- HISTÓRIA OVERENÍ -->
+    <div class="card">
+        <h2>Posledné pokusy o overenie</h2>
+        {% if logs %}
+        <table>
+            <thead>
+                <tr><th>Čas</th><th>Výsledok</th><th>Identifikovaná osoba</th><th>Vzdialenosť (Distance)</th></tr>
+            </thead>
+            <tbody>
+                {% for row in logs %}
+                <tr>
+                    <td>{{ row[0] }}</td>
+                    <td class="{{ 'badge-ok' if row[1] == 'AUTORIZOVANY' else 'badge-no' }}">{{ row[1] }}</td>
+                    <td>{{ row[2] }}</td>
+                    <td>{{ row[3] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+            <p style="color:#94a3b8;">Zatiaľ neprebehlo žiadne overenie.</p>
+        {% endif %}
+    </div>
+</div>
+</body>
+</html>
+"""
+
+
+@app.route("/")
+def index():
+    return render_template_string(
+        HTML_TEMPLATE,
+        users=users_db,
+        logs=read_logs(),
+        tolerance=0.50,
+        message=None,
+        success=True,
+        result_image=None
+    )
+
+
+@app.route("/user_photo/<filename>")
+def user_photo(filename):
+    return send_from_directory(AUTH_DIR, filename)
+
+
+@app.route("/register", methods=["POST"])
+def register():
+    raw_name = request.form.get("name", "").strip()
+    safe_name = secure_filename(raw_name)
+    file = request.files.get("photo")
+
+    if not safe_name or not file:
+        return render_template_string(
+            HTML_TEMPLATE, users=users_db, logs=read_logs(), tolerance=0.50,
+            message="Zadaj platné meno a vyber fotografiu.", success=False, result_image=None
+        )
+
+    file_bytes = np.frombuffer(file.read(), np.uint8)
+    bgr_img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+    if bgr_img is None:
+        return render_template_string(
+            HTML_TEMPLATE, users=users_db, logs=read_logs(), tolerance=0.50,
+            message="Súbor sa nepodarilo načítať ako obrázok.", success=False, result_image=None
+        )
+
+    bgr_img = resize_if_needed(bgr_img)
+    rgb_img = cv2.cvtColor(bgr_img, cv2.COLOR_BGR2RGB)
+
+    locations = face_recognition.face_locations(rgb_img, model="cnn")
+    if len(locations) != 1:
+        msg = (
+            "Na fotografii sa nenašla žiadna tvár."
+            if len(locations) == 0
+            else f"Na fotografii sa našlo viac tvárí ({len(locations)}). Nahraj fotku iba jednej osoby."
+        )
+        return render_template_string(
+            HTML_TEMPLATE, users=users_db, logs=read_logs(), tolerance=0.50,
+            message=msg, success=False, result_image=None
+        )
+
+    encodings = face_recognition.face_encodings(rgb_img, locations)
+    filename = f"{safe_name}.jpg"
+    save_path = os.path.join(AUTH_DIR, filename)
+    cv2.imwrite(save_path, bgr_img)
+
+    users_db[safe_name] = {"encoding": encodings[0], "filename": filename}
+    return render_template_string(
+        HTML_TEMPLATE, users=users_db, logs=read_logs(), tolerance=0.50,
+        message=f"Používateľ '{safe_name}' bol úspešne zaregistrovaný.", success=True, result_image=None
+    )
+
+
+@app.route("/verify", methods=["POST"])
+def verify():
+    tolerance = float(request.form.get("tolerance", 0.50))
+    file = request.files.get("photo")
+
+    if not users_db:
+        return render_template_string(
+            HTML_TEMPLATE, users=users_db, logs=read_logs(), tolerance=tolerance,
+            message="Databáza je prázdna. Najprv zaregistruj aspoň jedného používateľa.",
+            success=False, result_image=None
+        )
+
+    file_bytes = np.frombuffer(file.read(), np.uint8)
+    bgr_img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+    if bgr_img is None:
+        return render_template_string(
+            HTML_TEMPLATE, users=users_db, logs=read_logs(), tolerance=tolerance,
+            message="Neplatný formát obrázka.", success=False, result_image=None
+        )
+
+    bgr_img = resize_if_needed(bgr_img)
+    rgb_img = cv2.cvtColor(bgr_img, cv2.COLOR_BGR2RGB)
+
+    # Detekcia na CUDA GPU
+    locations = face_recognition.face_locations(rgb_img, model="cnn")
+    encodings = face_recognition.face_encodings(rgb_img, locations)
+
+    if not locations:
+        log_attempt("BEZ_TVARE", "-", None)
+        return render_template_string(
+            HTML_TEMPLATE, users=users_db, logs=read_logs(), tolerance=tolerance,
+            message="Na nahranej fotografii sa nenašla žiadna tvár.", success=False, result_image=None
+        )
+
+    known_names = list(users_db.keys())
+    known_encodings = [users_db[n]["encoding"] for n in known_names]
+
+    any_authorized = False
+    summary_parts = []
+
+    for (top, right, bottom, left), enc in zip(locations, encodings):
+        distances = face_recognition.face_distance(known_encodings, enc)
+        best_idx = int(np.argmin(distances))
+        best_dist = float(distances[best_idx])
+
+        if best_dist <= tolerance:
+            matched_name = known_names[best_idx]
+            label = f"AUTORIZOVANY: {matched_name} ({best_dist:.2f})"
+            color = (0, 255, 0)
+            any_authorized = True
+            summary_parts.append(f"{matched_name} (dist: {best_dist:.2f})")
+            log_attempt("AUTORIZOVANY", matched_name, best_dist)
+        else:
+            label = f"NEAUTORIZOVANY ({best_dist:.2f})"
+            color = (0, 0, 255)
+            summary_parts.append(f"Neznáma osoba (dist: {best_dist:.2f})")
+            log_attempt("NEAUTORIZOVANY", "Neznámy", best_dist)
+
+        cv2.rectangle(bgr_img, (left, top), (right, bottom), color, 2)
+        cv2.putText(bgr_img, label, (left, max(25, top - 10)),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.65, color, 2)
+
+    _, buffer = cv2.imencode(".jpg", bgr_img)
+    result_b64 = base64.b64encode(buffer).decode("utf-8")
+
+    msg = "Výsledok overenia: " + ", ".join(summary_parts)
+    return render_template_string(
+        HTML_TEMPLATE, users=users_db, logs=read_logs(), tolerance=tolerance,
+        message=msg, success=any_authorized, result_image=result_b64
+    )
+
+
+@app.route("/delete/<name>", methods=["POST"])
+def delete_user(name):
+    if name in users_db:
+        filepath = os.path.join(AUTH_DIR, users_db[name]["filename"])
+        if os.path.exists(filepath):
+            os.remove(filepath)
+        del users_db[name]
+    return redirect(url_for("index"))
+
+
+if __name__ == "__main__":
+    load_users_from_disk()
+    # 0.0.0.0 sprístupní webstránku aj z iných zariadení v lokálnej sieti
+    app.run(host="0.0.0.0", port=5000, debug=False)

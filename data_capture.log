@@ -1,0 +1,61 @@
+[2026-11-17 13:27:35,250] [INFO] === ATTENDANCE SYSTEM - DATA CAPTURE ===
+[2026-11-17 13:27:35,250] [INFO] 1. Single person capture
+[2026-11-17 13:27:35,250] [INFO] 2. Batch capture (multiple persons)
+[2026-11-17 13:27:35,250] [INFO] 3. Exit
+[2026-11-17 13:28:38,006] [INFO] Exiting...
+[2026-11-18 13:02:05,406] [INFO] === ATTENDANCE SYSTEM - DATA CAPTURE ===
+[2026-11-18 13:02:05,407] [INFO] 1. Single person capture
+[2026-11-18 13:02:05,407] [INFO] 2. Batch capture (multiple persons)
+[2026-11-18 13:02:05,407] [INFO] 3. Exit
+[2026-11-18 13:02:20,293] [INFO] Existing persons in database (12):
+[2026-11-18 13:02:20,293] [INFO]   1. ANMOL KUMARI (10 images)
+[2026-11-18 13:02:20,294] [INFO]   2. GAGANDEEP SINGH (10 images)
+[2026-11-18 13:02:20,294] [INFO]   3. GURSIMRAN JOT (10 images)
+[2026-11-18 13:02:20,294] [INFO]   4. HARJOT KAUR (10 images)
+[2026-11-18 13:02:20,295] [INFO]   5. JOBAN SINGH (10 images)
+[2026-11-18 13:02:20,295] [INFO]   6. KARANVEER SINGH (10 images)
+[2026-11-18 13:02:20,295] [INFO]   7. KARANVIR (10 images)
+[2026-11-18 13:02:20,295] [INFO]   8. LOVNISH VERMA (10 images)
+[2026-11-18 13:02:20,295] [INFO]   9. NIKSHEP PALIWAL (10 images)
+[2026-11-18 13:02:20,295] [INFO]   10. NITYA (10 images)
+[2026-11-18 13:02:20,295] [INFO]   11. RAHUL SIR (10 images)
+[2026-11-18 13:02:20,296] [INFO]   12. RAVI KANT (10 images)
+[2026-11-18 13:02:29,722] [INFO] Using CPU backend for DNN
+[2026-11-18 13:02:29,726] [WARNING] GStreamer pipeline failed, trying standard camera...
+[2026-11-18 13:02:29,877] [INFO] Camera resolution: 320x240 (requested: 480x360)
+[2026-11-18 13:02:29,877] [INFO] 
+============================================================
+[2026-11-18 13:02:29,877] [INFO] Platform: Jetson
+[2026-11-18 13:02:29,878] [INFO] Detection model: CNN
+[2026-11-18 13:02:29,878] [INFO] Max images: 10
+[2026-11-18 13:02:29,878] [INFO] ============================================================
+[2026-11-18 13:02:29,878] [INFO] INSTRUCTIONS:
+[2026-11-18 13:02:29,878] [INFO]   • Press SPACE to capture an image (single face required)
+[2026-11-18 13:02:29,878] [INFO]   • Press 'q' to quit early
+[2026-11-18 13:02:29,879] [INFO]   • Press 'r' to retake the last captured image
+[2026-11-18 13:02:29,879] [INFO]   • Ensure good lighting and face the camera directly
+[2026-11-18 13:02:29,879] [INFO]   • Vary your pose slightly between captures
+[2026-11-18 13:02:29,879] [INFO] ============================================================
+
+[2026-11-18 13:02:39,263] [INFO] [1/10] Saved TIBOR_1.jpg
+[2026-11-18 13:02:48,168] [INFO] [2/10] Saved TIBOR_2.jpg
+[2026-11-18 13:02:49,569] [INFO] [3/10] Saved TIBOR_3.jpg
+[2026-11-18 13:02:53,064] [INFO] [4/10] Saved TIBOR_4.jpg
+[2026-11-18 13:02:54,765] [INFO] [5/10] Saved TIBOR_5.jpg
+[2026-11-18 13:02:56,525] [INFO] [6/10] Saved TIBOR_6.jpg
+[2026-11-18 13:02:57,814] [INFO] [7/10] Saved TIBOR_7.jpg
+[2026-11-18 13:03:00,205] [INFO] [8/10] Saved TIBOR_8.jpg
+[2026-11-18 13:03:01,927] [INFO] [9/10] Saved TIBOR_9.jpg
+[2026-11-18 13:03:09,116] [INFO] [10/10] Saved TIBOR_10.jpg
+[2026-11-18 13:03:09,117] [INFO] Reached max image count (10)!
+[2026-11-18 13:03:09,214] [INFO] 
+============================================================
+[2026-11-18 13:03:09,215] [INFO] CAPTURE SESSION SUMMARY
+[2026-11-18 13:03:09,215] [INFO] ============================================================
+[2026-11-18 13:03:09,215] [INFO]   • Person: TIBOR
+[2026-11-18 13:03:09,216] [INFO]   • Images captured: 10/10
+[2026-11-18 13:03:09,216] [INFO]   • Session duration: 39.3 seconds
+[2026-11-18 13:03:09,216] [INFO]   • Average capture interval: 3.3 seconds
+[2026-11-18 13:03:09,216] [INFO]   • Saved to: /home/diplomovka/bsb/facerec/FaceRecognition-Attendance/Attendance_data/TIBOR
+[2026-11-18 13:03:09,216] [INFO] ============================================================
+[2026-11-18 13:03:09,216] [INFO] Data capture complete! You can now run the attendance system.
